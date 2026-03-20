@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>NewsLens — Media Divergence Tracker</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg:#0b0d11;--bg2:#111419;--bg3:#181c24;--border:#1e2330;--border2:#252b3b;--text:#e8eaf0;--text2:#8b92a8;--text3:#545c74;--accent:#f0b429;--red:#e05252;--green:#4caf8c;--blue:#4f8ef0;--orange:#f0804a}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+    header{position:sticky;top:0;z-index:100;background:rgba(11,13,17,.92);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0 2rem}
+    .header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:60px}
+    .logo-mark{font-family:'Playfair Display',serif;font-weight:900;font-size:1.5rem;color:var(--accent)}
+    .logo-tag{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-left:10px}
+    .header-stats{display:flex;gap:2rem}
+    .h-stat{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--text3)}
+    .h-stat span{color:var(--accent);font-weight:600}
+    .refresh-btn{font-family:'IBM Plex Mono',monospace;font-size:.7rem;background:var(--border2);color:var(--text2);border:1px solid var(--border2);padding:6px 14px;border-radius:4px;cursor:pointer;transition:all .2s;letter-spacing:1px;text-transform:uppercase}
+    .refresh-btn:hover{background:var(--accent);color:var(--bg)}
+    .hero{padding:4rem 2rem 2rem;max-width:1400px;margin:0 auto}
+    .hero-eyebrow{font-family:'IBM Plex Mono',monospace;font-size:.65rem;letter-spacing:3px;color:var(--accent);text-transform:uppercase;margin-bottom:1rem}
+    .hero-title{font-family:'Playfair Display',serif;font-size:clamp(2.2rem,5vw,3.8rem);font-weight:900;line-height:1.05;max-width:700px;margin-bottom:1.2rem}
+    .hero-title em{font-style:italic;color:var(--accent)}
+    .hero-sub{font-size:1rem;color:var(--text2);max-width:520px;line-height:1.7}
+    .stats-bar{max-width:1400px;margin:2.5rem auto 0;padding:0 2rem;display:flex;gap:1px}
+    .stat-card{flex:1;background:var(--bg2);border:1px solid var(--border);padding:1.2rem 1.5rem;position:relative;overflow:hidden}
+    .stat-card:first-child{border-radius:8px 0 0 8px}.stat-card:last-child{border-radius:0 8px 8px 0}
+    .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+    .stat-card:nth-child(1)::before{background:var(--accent)}.stat-card:nth-child(2)::before{background:var(--blue)}.stat-card:nth-child(3)::before{background:var(--red)}.stat-card:nth-child(4)::before{background:var(--green)}
+    .stat-num{font-family:'Playfair Display',serif;font-size:2.2rem;font-weight:700}
+    .stat-label{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;margin-top:4px}
+    .filters{max-width:1400px;margin:2rem auto 0;padding:0 2rem;display:flex;gap:.5rem;flex-wrap:wrap}
+    .filter-btn{font-family:'IBM Plex Mono',monospace;font-size:.65rem;padding:6px 14px;border:1px solid var(--border2);background:transparent;color:var(--text3);border-radius:20px;cursor:pointer;transition:all .2s;letter-spacing:1px;text-transform:uppercase}
+    .filter-btn:hover,.filter-btn.active{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+    .stories-section{max-width:1400px;margin:2rem auto 4rem;padding:0 2rem}
+    .section-label{font-family:'IBM Plex Mono',monospace;font-size:.65rem;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:1.5rem;display:flex;align-items:center;gap:1rem}
+    .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+    .story-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;margin-bottom:1.5rem;overflow:hidden;animation:fadeInUp .4s ease both}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .story-header{padding:1.4rem 1.6rem;cursor:pointer;display:flex;align-items:flex-start;gap:1.2rem;user-select:none}
+    .story-num{font-family:'IBM Plex Mono',monospace;font-size:.7rem;color:var(--text3);min-width:28px;padding-top:4px}
+    .story-main{flex:1}
+    .story-topic{font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:700;line-height:1.3;margin-bottom:.8rem}
+    .story-meta{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+    .source-badges{display:flex;gap:6px;flex-wrap:wrap}
+    .source-badge{font-family:'IBM Plex Mono',monospace;font-size:.6rem;padding:3px 8px;border-radius:3px;font-weight:500}
+    .divergence-pill{font-family:'IBM Plex Mono',monospace;font-size:.62rem;padding:3px 10px;border-radius:12px}
+    .div-low{background:rgba(76,175,140,.15);color:var(--green);border:1px solid rgba(76,175,140,.3)}
+    .div-med{background:rgba(240,128,74,.15);color:var(--orange);border:1px solid rgba(240,128,74,.3)}
+    .div-high{background:rgba(224,82,82,.15);color:var(--red);border:1px solid rgba(224,82,82,.3)}
+    .conflict-flag{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--accent)}
+    .expand-icon{color:var(--text3);font-size:.9rem;transition:transform .3s;align-self:center}
+    .story-card.open .expand-icon{transform:rotate(180deg)}
+    .story-body{display:none;border-top:1px solid var(--border)}
+    .story-card.open .story-body{display:block}
+    .conflict-banner{background:rgba(240,180,41,.07);border-bottom:1px solid rgba(240,180,41,.2);padding:1rem 1.6rem}
+    .conflict-title{font-family:'IBM Plex Mono',monospace;font-size:.65rem;letter-spacing:2px;color:var(--accent);text-transform:uppercase;margin-bottom:.8rem}
+    .conflict-grid{display:flex;gap:1rem;flex-wrap:wrap}
+    .conflict-item{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:.7rem 1rem;flex:1;min-width:180px}
+    .conflict-type{font-family:'IBM Plex Mono',monospace;font-size:.55rem;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:6px}
+    .conflict-entry{display:flex;align-items:center;gap:8px;font-size:.8rem;margin-bottom:4px}
+    .conflict-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .conflict-src{color:var(--text2);font-size:.72rem}
+    .conflict-val{font-family:'IBM Plex Mono',monospace;font-size:.75rem;font-weight:600}
+    .articles-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;background:var(--border)}
+    .article-cell{background:var(--bg2);padding:1.2rem 1.4rem;transition:background .2s}
+    .article-cell:hover{background:var(--bg3)}
+    .article-source-row{display:flex;align-items:center;gap:8px;margin-bottom:.6rem}
+    .art-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .art-source{font-family:'IBM Plex Mono',monospace;font-size:.65rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+    .art-bias{font-family:'IBM Plex Mono',monospace;font-size:.55rem;color:var(--text3);background:var(--bg3);padding:2px 6px;border-radius:3px}
+    .art-title{font-size:.88rem;line-height:1.5;margin-bottom:.5rem;font-weight:500}
+    .art-desc{font-size:.78rem;color:var(--text3);line-height:1.6;margin-bottom:.7rem}
+    .art-claims{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.6rem}
+    .claim-tag{font-family:'IBM Plex Mono',monospace;font-size:.58rem;padding:2px 7px;border-radius:3px;border:1px solid var(--border2);color:var(--text2)}
+    .claim-tag.percentage{border-color:rgba(79,142,240,.4);color:var(--blue)}
+    .claim-tag.number{border-color:rgba(224,82,82,.4);color:var(--red)}
+    .claim-tag.money{border-color:rgba(76,175,140,.4);color:var(--green)}
+    .claim-tag.time{border-color:rgba(240,180,41,.4);color:var(--accent)}
+    .art-link{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--text3);text-decoration:none;letter-spacing:1px;text-transform:uppercase}
+    .art-link:hover{color:var(--accent)}
+    .solo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-bottom:2rem}
+    .solo-card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:1.2rem}
+    .loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:999;transition:opacity .6s}
+    .loading-overlay.done{opacity:0;pointer-events:none}
+    .loader-logo{font-family:'Playfair Display',serif;font-size:2.5rem;font-weight:900;color:var(--accent);margin-bottom:2rem}
+    .loader-bar{width:240px;height:2px;background:var(--border2);border-radius:2px;overflow:hidden}
+    .loader-fill{height:100%;background:var(--accent);animation:loadFill 1.8s ease-in-out forwards}
+    @keyframes loadFill{0%{width:0}60%{width:70%}100%{width:100%}}
+    .loader-text{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--text3);letter-spacing:2px;margin-top:1rem;text-transform:uppercase}
+    footer{border-top:1px solid var(--border);padding:2rem;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--text3)}
+    footer span{color:var(--accent)}
+    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+  </style>
+</head>
+<body>
+<div class="loading-overlay" id="loader">
+  <div class="loader-logo">NewsLens</div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+  <div class="loader-text" id="loader-text">Scanning 10 outlets...</div>
+</div>
+<header>
+  <div class="header-inner">
+    <div><span class="logo-mark">NewsLens</span><span class="logo-tag">Media Divergence Tracker</span></div>
+    <div class="header-stats">
+      <div class="h-stat">Updated <span>{{ stats.last_updated }}</span></div>
+      <div class="h-stat"><span>{{ stats.total_stories }}</span> stories</div>
+      <div class="h-stat"><span>{{ stats.total_conflicts }}</span> conflicts</div>
+    </div>
+    <button class="refresh-btn" onclick="refreshNews()">↻ Refresh</button>
+  </div>
+</header>
+<div class="hero">
+  <div class="hero-eyebrow">// real-time media analysis</div>
+  <h1 class="hero-title">What are they <em>really</em> saying?</h1>
+  <p class="hero-sub">Track how major news outlets cover the same story — side by side. Spot diverging claims, conflicting numbers, and editorial differences across 10 global sources.</p>
+</div>
+<div class="stats-bar">
+  <div class="stat-card"><div class="stat-num">{{ stats.total_stories }}</div><div class="stat-label">Stories Tracked</div></div>
+  <div class="stat-card"><div class="stat-num">{{ stats.total_articles }}</div><div class="stat-label">Articles Analysed</div></div>
+  <div class="stat-card"><div class="stat-num">{{ stats.total_conflicts }}</div><div class="stat-label">Fact Conflicts</div></div>
+  <div class="stat-card"><div class="stat-num">{{ stats.multi_source_stories }}</div><div class="stat-label">Cross-Source Stories</div></div>
+</div>
+<div class="filters">
+  <button class="filter-btn active" onclick="filterStories('all',this)">All Stories</button>
+  <button class="filter-btn" onclick="filterStories('conflict',this)">⚡ Has Conflicts</button>
+  <button class="filter-btn" onclick="filterStories('multi',this)">Multi-Source</button>
+  <button class="filter-btn" onclick="filterStories('high-div',this)">High Divergence</button>
+</div>
+<div class="stories-section">
+{% set multi = groups|selectattr('source_count','gt',1)|list %}
+{% if multi %}
+<div class="section-label">Cross-Source Coverage ({{ multi|length }} stories)</div>
+{% for group in multi %}
+<div class="story-card {{ 'has-conflict' if group.claim_conflicts else '' }} multi" data-divergence="{{ group.divergence }}" style="animation-delay:{{ loop.index0*0.05 }}s">
+  <div class="story-header" onclick="toggleStory(this)">
+    <span class="story-num">{{ '%02d'|format(loop.index) }}</span>
+    <div class="story-main">
+      <div class="story-topic">{{ group.topic }}</div>
+      <div class="story-meta">
+        <div class="source-badges">
+          {% for art in group.articles %}
+          <span class="source-badge" style="background:{{ art.source_color }}22;color:{{ art.source_color }};border:1px solid {{ art.source_color }}44">{{ art.source_name }}</span>
+          {% endfor %}
+        </div>
+        {% if group.divergence > 0 %}
+        <span class="divergence-pill {{ 'div-high' if group.divergence>50 else ('div-med' if group.divergence>25 else 'div-low') }}">{{ group.divergence }}% divergence</span>
+        {% endif %}
+        {% if group.claim_conflicts %}
+        <span class="conflict-flag">⚡ {{ group.claim_conflicts|length }} fact conflict{{ 's' if group.claim_conflicts|length>1 else '' }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <span class="expand-icon">▾</span>
+  </div>
+  <div class="story-body">
+    {% if group.claim_conflicts %}
+    <div class="conflict-banner">
+      <div class="conflict-title">⚡ Conflicting Facts Detected</div>
+      <div class="conflict-grid">
+        {% for conflict in group.claim_conflicts %}
+        <div class="conflict-item">
+          <div class="conflict-type">{{ conflict.type }}</div>
+          {% for entry in conflict.entries %}
+          <div class="conflict-entry">
+            <div class="conflict-dot" style="background:{{ entry.color }}"></div>
+            <span class="conflict-src">{{ entry.source }}:</span>
+            <span class="conflict-val">{{ entry.value }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+    <div class="articles-grid">
+      {% for art in group.articles %}
+      <div class="article-cell">
+        <div class="article-source-row">
+          <div class="art-dot" style="background:{{ art.source_color }}"></div>
+          <span class="art-source" style="color:{{ art.source_color }}">{{ art.source_name }}</span>
+          <span class="art-bias">{{ art.source_bias }}</span>
+        </div>
+        <div class="art-title">{{ art.title }}</div>
+        {% if art.description %}<div class="art-desc">{{ art.description[:160] }}{% if art.description|length>160 %}...{% endif %}</div>{% endif %}
+        {% if art.claims %}<div class="art-claims">{% for c in art.claims %}<span class="claim-tag {{ c.type }}">{{ c.value }}</span>{% endfor %}</div>{% endif %}
+        <a class="art-link" href="{{ art.url }}" target="_blank">Read full →</a>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+{% set solo = groups|selectattr('source_count','equalto',1)|list %}
+{% if solo %}
+<div class="section-label" style="margin-top:3rem">Single-Source Articles ({{ solo|length }})</div>
+<div class="solo-grid">
+{% for group in solo[:24] %}{% set art = group.articles[0] %}
+<div class="solo-card" style="border-left:3px solid {{ art.source_color }}">
+  <div class="article-source-row" style="margin-bottom:.5rem">
+    <div class="art-dot" style="background:{{ art.source_color }}"></div>
+    <span class="art-source" style="color:{{ art.source_color }}">{{ art.source_name }}</span>
+    <span class="art-bias">{{ art.source_bias }}</span>
+  </div>
+  <div class="art-title" style="font-size:.83rem;margin-bottom:.5rem">{{ art.title }}</div>
+  {% if art.claims %}<div class="art-claims">{% for c in art.claims %}<span class="claim-tag {{ c.type }}">{{ c.value }}</span>{% endfor %}</div>{% endif %}
+  <a class="art-link" href="{{ art.url }}" target="_blank">Read →</a>
+</div>
+{% endfor %}
+</div>
+{% endif %}
+{% if not groups %}
+<div style="text-align:center;padding:4rem;color:var(--text3)">
+  <div style="font-family:'Playfair Display',serif;font-size:1.5rem;margin-bottom:.5rem">No stories loaded</div>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:.7rem">Check your API key or network connection</div>
+</div>
+{% endif %}
+</div>
+<footer><span>NewsLens</span> — Media Divergence Tracker | Data from NewsAPI | {{ stats.last_updated }}</footer>
+<script>
+window.addEventListener('load',()=>{
+  const msgs=['Fetching headlines...','Grouping stories...','Detecting conflicts...','Ready.'];
+  let i=0; const lt=document.getElementById('loader-text');
+  const iv=setInterval(()=>{if(i<msgs.length)lt.textContent=msgs[i++];else clearInterval(iv);},400);
+  setTimeout(()=>document.getElementById('loader').classList.add('done'),1800);
+});
+function toggleStory(h){h.parentElement.classList.toggle('open');}
+function filterStories(type,btn){
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.story-card').forEach(card=>{
+    let show=true;
+    if(type==='conflict'&&!card.classList.contains('has-conflict'))show=false;
+    if(type==='multi'&&!card.classList.contains('multi'))show=false;
+    if(type==='high-div'&&parseFloat(card.dataset.divergence||0)<30)show=false;
+    card.style.display=show?'':'none';
+  });
+}
+function refreshNews(){
+  const btn=document.querySelector('.refresh-btn');
+  btn.textContent='↻ Refreshing...'; btn.disabled=true;
+  fetch('/api/refresh').then(r=>r.json()).then(()=>location.reload()).catch(()=>{btn.textContent='↻ Refresh';btn.disabled=false;});
+}
+</script>
+</body></html>
